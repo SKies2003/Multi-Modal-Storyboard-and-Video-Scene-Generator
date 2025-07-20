@@ -1,29 +1,26 @@
 # modules/storyboard_generator.py
 
-import requests
+import replicate
 import os
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
-
-API_KEY = os.getenv("OPENROUTER_API_KEY")
+os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
 
 def generate_storyboard_image(prompt: str, output_path: str):
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
+    output = replicate.run(
+        "stability-ai/sdxl:db21e45f8c84e4a0aef44c5765d66009f962f8f5c219d13789aab38b0d3d95c2",
+        input={
+            "prompt": prompt,
+            "width": 1024,
+            "height": 1024,
+            "num_inference_steps": 30,
+            "guidance_scale": 7.5,
+        }
+    )
 
-    data = {
-        "model": "stability/stable-diffusion-xl",  # alternative: "openai/dall-e-3"
-        "prompt": prompt
-    }
-
-    response = requests.post("https://openrouter.ai/api/v1/images/generations", headers=headers, json=data)
-
-    if response.status_code != 200:
-        raise Exception(f"Image generation error: {response.status_code}\n{response.text}")
-
-    image_url = response.json()["data"][0]["url"]
-
-    os.system(f"curl -L '{image_url}' -o {output_path}")
+    image_url = output[0]
+    response = requests.get(image_url)
+    with open(output_path, "wb") as f:
+        f.write(response.content)

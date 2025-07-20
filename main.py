@@ -6,7 +6,12 @@ from modules.storyboard_generator import generate_storyboard_image
 from modules.video_generator import generate_video_from_image
 
 def extract_scenes(script: str):
-    return [line.strip() for line in script.split('\n') if line.strip().lower().startswith("scene")]
+    scenes = []
+    paragraphs = script.split("\n\n")
+    for para in paragraphs:
+        if any(tag in para.upper() for tag in ["EXT.", "INT."]) or "FIGURE" in para.upper() or "LOCKET" in para.lower():
+            scenes.append(para.strip())
+    return scenes[:3]  # Limit to first 3 key scenes
 
 def main():
     os.makedirs(OUTPUT_SCRIPT_DIR, exist_ok=True)
