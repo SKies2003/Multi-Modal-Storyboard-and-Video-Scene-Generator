@@ -1,17 +1,30 @@
-from openai import OpenAI
+# modules/script_generator.py
+
+import requests
 from dotenv import load_dotenv
 import os
 
-load_dotenv()  # ✅ Load environment variables from .env file
+load_dotenv()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-def generate_script(story_prompt: str) -> str:
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",  # switch from gpt-4 if necessary
-        messages=[
-            {"role": "system", "content": "You are a scriptwriter. Turn the prompt into a scene-by-scene movie script."},
-            {"role": "user", "content": story_prompt}
+def generate_script(prompt: str) -> str:
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    body = {
+        "model": "openai/gpt-3.5-turbo",  # or try "mistralai/mixtral-8x7b"
+        "messages": [
+            {"role": "system", "content": "You are a movie scriptwriter."},
+            {"role": "user", "content": prompt}
         ]
-    )
-    return response.choices[0].message.content.strip()
+    }
+
+    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=body)
+
+    if response.status_code != 200:
+        raise Exception(f"OpenRouter API error: {response.status_code}\n{response.text}")
+
+    return response.json()["choices"][0]["message"]["content"]
